@@ -1,28 +1,37 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function Login({ setIsLoggedIn }) {
+export default function Login({ onLogin }) {
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: ''
   });
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  const from = location.state?.from?.pathname || '/';
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simple validation - in real app, you'd validate against backend
-    if (formData.username.trim() && formData.email && formData.password) {
-      setIsLoggedIn(true);
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('username', formData.username);
-      localStorage.setItem('email', formData.email);
-      // Redirect to intended destination
-      navigate(from, { replace: true });
+    setIsLoading(true);
+    setError('');
+    
+    if (!formData.email || !formData.password) {
+      setError('Please fill in all fields');
+      setIsLoading(false);
+      return;
     }
+    
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setIsLoading(false);
+      return;
+    }
+    
+    setTimeout(() => {
+      const success = onLogin(formData);
+      if (!success) {
+        setError('Invalid credentials');
+      }
+      setIsLoading(false);
+    }, 1000);
   };
 
   const handleChange = (e) => {
@@ -30,30 +39,24 @@ export default function Login({ setIsLoggedIn }) {
       ...formData,
       [e.target.name]: e.target.value
     });
+    setError('');
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1>Welcome Back</h1>
-          <p>Sign in to your account</p>
+          <h1>🚀 Welcome to ZOVAi.in</h1>
+          <p>Sign in to access your smart shopping experience</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Enter your username"
-              required
-            />
+        {error && (
+          <div className="error-message">
+            {error}
           </div>
+        )}
 
+        <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -62,8 +65,9 @@ export default function Login({ setIsLoggedIn }) {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email"
               required
+              placeholder="Enter your email"
+              disabled={isLoading}
             />
           </div>
 
@@ -75,18 +79,25 @@ export default function Login({ setIsLoggedIn }) {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter your password"
               required
+              placeholder="Enter your password (min 6 characters)"
+              disabled={isLoading}
             />
           </div>
 
-          <button type="submit" className="login-btn">
-            Sign In
+          <button type="submit" className="login-btn" disabled={isLoading}>
+            {isLoading ? 'Signing In...' : 'Sign In to ZOVAi.in'}
           </button>
         </form>
 
+        <div className="demo-credentials">
+          <p><strong>Demo Credentials:</strong></p>
+          <p>Email: demo@zovai.in</p>
+          <p>Password: demo123</p>
+        </div>
+
         <div className="login-footer">
-          <p>Demo credentials: any username, email and password</p>
+          <p>New to ZOVAi.in? Experience AI-powered shopping!</p>
         </div>
       </div>
     </div>

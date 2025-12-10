@@ -26,25 +26,76 @@ function App() {
   const [orders,setOrders]= useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [language, setLanguage] = useState('en');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  },[cart]);
-  useEffect(() => {
-    localStorage.setItem("orders", JSON.stringify(orders));
-  },[orders]);
+    if (isLoggedIn) {
+      localStorage.setItem("cart", JSON.stringify(cart));
+    }
+  },[cart, isLoggedIn]);
   
   useEffect(() => {
-    const loginStatus = localStorage.getItem('isLoggedIn');
-    if (loginStatus === 'true') {
-      setIsLoggedIn(true);
+    if (isLoggedIn) {
+      localStorage.setItem("orders", JSON.stringify(orders));
     }
+  },[orders, isLoggedIn]);
+  
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const loginStatus = localStorage.getItem('isLoggedIn');
+    
+    if (token && loginStatus === 'true') {
+      setIsLoggedIn(true);
+      const savedCart = localStorage.getItem('cart');
+      const savedOrders = localStorage.getItem('orders');
+      if (savedCart) setCart(JSON.parse(savedCart));
+      if (savedOrders) setOrders(JSON.parse(savedOrders));
+    }
+    setIsLoading(false);
   }, []);
+
+  const handleLogin = (credentials) => {
+    // Simple authentication - in real app, validate with backend
+    if (credentials.email && credentials.password) {
+      const token = 'zovai_' + Date.now();
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userEmail', credentials.email);
+      setIsLoggedIn(true);
+      return true;
+    }
+    return false;
+  };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    localStorage.removeItem('authToken');
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('cart');
+    localStorage.removeItem('orders');
+    setCart([]);
+    setOrders([]);
   };
+
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-content">
+          <h1>🚀 ZOVAi.in</h1>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="login-only-app">
+        <Login onLogin={handleLogin} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -59,7 +110,6 @@ function App() {
       />
       <main>
         <Routes>
-          <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
           <Route path="/" element={
             <AmazonHomepage 
               cart={cart} 
@@ -86,25 +136,19 @@ function App() {
             </div>
           } />
           <Route path="/cart" element={
-            <ProtectedRoute isLoggedIn={isLoggedIn}>
-              <div className="full-screen-content">
-                <Cart cart={cart} setCart={setCart}/>
-              </div>
-            </ProtectedRoute>
+            <div className="full-screen-content">
+              <Cart cart={cart} setCart={setCart}/>
+            </div>
           } />
           <Route path="/orders" element={
-            <ProtectedRoute isLoggedIn={isLoggedIn}>
-              <div className="full-screen-content">
-                <Orders orders={orders} setOrders={setOrders} />
-              </div>
-            </ProtectedRoute>
+            <div className="full-screen-content">
+              <Orders orders={orders} setOrders={setOrders} />
+            </div>
           } />
           <Route path="/order-confirmation" element={
-            <ProtectedRoute isLoggedIn={isLoggedIn}>
-              <div className="full-screen-content">
-                <OrderConfirmation />
-              </div>
-            </ProtectedRoute>
+            <div className="full-screen-content">
+              <OrderConfirmation />
+            </div>
           } />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
